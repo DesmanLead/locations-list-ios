@@ -1,5 +1,5 @@
 //
-//  LocationsListView.swift
+//  LocationsListContainerView.swift
 //  Locations List
 //
 //  Created by Artem Kirienko on 10/03/2026.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct LocationsListView: View {
+struct LocationsListContainerView: View {
     let model: LocationsListModel
 
     @State private var isCustomLocationViewPresented = false
@@ -15,30 +15,27 @@ struct LocationsListView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if let error = model.fetchError {
-                    ContentUnavailableView {
-                        Label("Failed to load locations", systemImage: "exclamationmark.triangle")
-                    } description: {
-                        Text(error.localizedDescription)
-                    }
-                    .accessibilityAddTraits(.isStaticText)
-                } else if model.locations.isEmpty {
-                    ContentUnavailableView(
-                        "No Locations",
-                        systemImage: "map",
-                        description: Text("You can still open a custom location by entering coordinates manually.")
-                    )
-                    .accessibilityAddTraits(.isStaticText)
-                } else {
-                    List {
-                        Section {
-                            ForEach(model.locations) { location in
-                                LocationCell(model: location)
+                switch model.fetchStatus {
+                    case .loading:
+                        LocationsListSkeletonView()
+                    case .success:
+                        if model.locations.isEmpty {
+                            ContentUnavailableView {
+                                Label("No Locations", systemImage: "map")
+                            } description: {
+                                Text("You can still open a custom location by entering coordinates manually.")
                             }
+                            .accessibilityAddTraits(.isStaticText)
+                        } else {
+                            LocationsListView(locations: model.locations)
                         }
-                    }
-                    .listStyle(.insetGrouped)
-                    .scrollContentBackground(.hidden)
+                    case .failure(let error):
+                        ContentUnavailableView {
+                            Label("Failed to load locations", systemImage: "exclamationmark.triangle")
+                        } description: {
+                            Text(error.localizedDescription)
+                        }
+                        .accessibilityAddTraits(.isStaticText)
                 }
             }
             .background(
@@ -77,13 +74,13 @@ struct LocationsListView: View {
 }
 
 #Preview {
-    LocationsListView(model: .init(api: MockLocationsAPI()))
+    LocationsListContainerView(model: .init(api: MockLocationsAPI()))
 }
 
 #Preview("Empty") {
-    LocationsListView(model: .init(api: MockLocationsAPI(result: .success([]))))
+    LocationsListContainerView(model: .init(api: MockLocationsAPI(result: .success([]))))
 }
 
 #Preview("Error") {
-    LocationsListView(model: .init(api: MockLocationsAPI(result: .failure(NSError(domain: "test", code: 42)))))
+    LocationsListContainerView(model: .init(api: MockLocationsAPI(result: .failure(NSError(domain: "test", code: 42)))))
 }

@@ -9,8 +9,14 @@ import Foundation
 
 @Observable
 final class LocationsListModel {
+    enum Status {
+        case loading
+        case success
+        case failure(Error)
+    }
+
     private(set) var locations: [Location] = []
-    private(set) var fetchError: Error?
+    private(set) var fetchStatus: Status = .loading
 
     private let api: LocationsAPIProtocol
 
@@ -20,11 +26,13 @@ final class LocationsListModel {
 
     func fetch() async {
         guard locations.isEmpty else { return }
+        fetchStatus = .loading
         do {
             let locations = try await api.get()
             self.locations = locations
+            fetchStatus = .success
         } catch {
-            fetchError = error
+            fetchStatus = .failure(error)
         }
     }
 }

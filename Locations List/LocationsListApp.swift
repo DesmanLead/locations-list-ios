@@ -13,7 +13,7 @@ struct LocationsListApp: App {
 
     var body: some Scene {
         WindowGroup {
-            LocationsListView(model: locationsListModel)
+            LocationsListContainerView(model: locationsListModel)
         }
     }
 }
