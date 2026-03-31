@@ -12,29 +12,16 @@ struct LocationCell: View {
 
     let model: Location
 
-    private var locationName: String? {
-        guard let name = model.name?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !name.isEmpty else {
-            return nil
-        }
-        return name
-    }
-
-    private var coordinatesText: String {
-        "\(model.latitude), \(model.longitude)"
-    }
-
     var body: some View {
         Button {
-            let url = Wikipedia.url(for: model)
-            openURL(url)
+            openURL(model.wikipediaURL)
         } label: {
             VStack(alignment: .leading, spacing: 4) {
-                Text(locationName ?? "Unnamed location")
+                Text(model.displayName)
                     .font(.headline)
-                    .foregroundStyle(locationName == nil ? .secondary : .primary)
+                    .foregroundStyle(model.hasCustomName ? .primary : .secondary)
 
-                Text(coordinatesText)
+                Text(model.coordinatesText)
                     .font(.subheadline.monospacedDigit())
                     .foregroundStyle(.secondary)
             }
@@ -42,8 +29,8 @@ struct LocationCell: View {
             .padding(.vertical, 4)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(locationName ?? "Unnamed location")
-        .accessibilityValue("Coordinates \(coordinatesText)")
+        .accessibilityLabel(model.displayName)
+        .accessibilityValue("Coordinates \(model.coordinatesText)")
         .accessibilityHint("Opens this location in Wikipedia")
     }
 }
@@ -55,4 +42,3 @@ struct LocationCell: View {
     }
     .listStyle(.plain)
 }
-

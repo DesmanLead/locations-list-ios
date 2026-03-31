@@ -8,38 +8,10 @@
 import SwiftUI
 
 struct CustomLocationView: View {
-    private static let coordinateFormatter: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.generatesDecimalNumbers = false
-        return formatter
-    }()
-
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
 
-    @State private var latitude: Double?
-    @State private var longitude: Double?
-
-    private var latitudeIsValid: Bool {
-        guard let latitude else { return false }
-        return (-90...90).contains(latitude)
-    }
-
-    private var longitudeIsValid: Bool {
-        guard let longitude else { return false }
-        return (-180...180).contains(longitude)
-    }
-
-    private var canOpenLocation: Bool {
-        latitudeIsValid && longitudeIsValid
-    }
-
-    private func coordinateValue(from text: String) -> Double? {
-        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedText.isEmpty else { return nil }
-        return Self.coordinateFormatter.number(from: trimmedText)?.doubleValue
-    }
+    @State private var model = CustomLocationModel()
 
     var body: some View {
         NavigationStack {
@@ -58,24 +30,24 @@ struct CustomLocationView: View {
                 VStack(spacing: 16) {
                     coordinateField(
                         title: "Latitude",
-                        value: $latitude,
+                        value: $model.latitudeText,
                         placeholder: "37.3346",
-                        isValid: latitude == nil || latitudeIsValid,
+                        validation: model.latitudeValidation,
                         helpText: "Use a value between -90 and 90."
                     )
 
                     coordinateField(
                         title: "Longitude",
-                        value: $longitude,
+                        value: $model.longitudeText,
                         placeholder: "-122.0090",
-                        isValid: longitude == nil || longitudeIsValid,
+                        validation: model.longitudeValidation,
                         helpText: "Use a value between -180 and 180."
                     )
                 }
 
                 Button {
-                    guard let latitude, let longitude else { return }
-                    openURL(Wikipedia.url(for: .init(name: nil, latitude: latitude, longitude: longitude)))
+                    guard let location = model.location() else { return }
+                    openURL(location.wikipediaURL)
                     dismiss()
                 } label: {
                     Text("Open in Wikipedia")
@@ -83,7 +55,7 @@ struct CustomLocationView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
-                .disabled(!canOpenLocation)
+                .disabled(!model.canOpenLocation)
 
                 Spacer()
             }
@@ -108,16 +80,16 @@ struct CustomLocationView: View {
     @ViewBuilder
     private func coordinateField(
         title: String,
-        value: Binding<Double?>,
+        value: Binding<String>,
         placeholder: String,
-        isValid: Bool,
+        validation: CustomLocationModel.ValidationStatus,
         helpText: String
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.headline)
 
-            TextField(placeholder, value: value, formatter: Self.coordinateFormatter)
+            TextField(placeholder, text: value)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .keyboardType(.numbersAndPunctuation)
@@ -129,12 +101,12 @@ struct CustomLocationView: View {
                 }
                 .overlay {
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(isValid ? Color.secondary.opacity(0.2) : .red, lineWidth: 1)
+                        .stroke(validation.showsError ? .red : Color.secondary.opacity(0.2), lineWidth: 1)
                 }
 
             Text(helpText)
                 .font(.caption)
-                .foregroundColor(isValid ? .secondary : .red)
+                .foregroundColor(validation.showsError ? .red : .secondary)
         }
     }
 }
@@ -142,4 +114,3 @@ struct CustomLocationView: View {
 #Preview {
     CustomLocationView()
 }
-
